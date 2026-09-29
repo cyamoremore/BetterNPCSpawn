@@ -496,7 +496,20 @@ namespace Oxide.Plugins
             {
                 var inventory = GetInventory(scientist);
                 if (inventory != null)
-                    inventory.GiveItem(weaponDef, 1);
+                {
+                    try
+                    {
+                        // Použij reflections pro dávání item
+                        var method = inventory.GetType().GetMethod("GiveItem",
+                            System.Reflection.BindingFlags.Public |
+                            System.Reflection.BindingFlags.NonPublic |
+                            System.Reflection.BindingFlags.Instance);
+
+                        if (method != null)
+                            method.Invoke(inventory, new object[] { weaponDef, 1 });
+                    }
+                    catch { }
+                }
             }
 
             if (!behavior.InfiniteAmmo && behavior.AmmoPerMagazine > 0)
@@ -506,12 +519,24 @@ namespace Oxide.Plugins
                 {
                     var inventory = GetInventory(scientist);
                     if (inventory != null)
-                        inventory.GiveItem(ammoDef, behavior.AmmoPerMagazine);
+                    {
+                        try
+                        {
+                            var method = inventory.GetType().GetMethod("GiveItem",
+                                System.Reflection.BindingFlags.Public |
+                                System.Reflection.BindingFlags.NonPublic |
+                                System.Reflection.BindingFlags.Instance);
+
+                            if (method != null)
+                                method.Invoke(inventory, new object[] { ammoDef, behavior.AmmoPerMagazine });
+                        }
+                        catch { }
+                    }
                 }
             }
         }
 
-        private BasePlayerInventory GetInventory(object scientist)
+        private object GetInventory(object scientist)
         {
             if (scientist == null)
                 return null;
@@ -525,8 +550,8 @@ namespace Oxide.Plugins
             if (inventoryProp != null)
             {
                 var value = inventoryProp.GetValue(scientist, null);
-                if (value is BasePlayerInventory inv)
-                    return inv;
+                if (value != null)
+                    return value;
             }
 
             var inventoryField = scientist.GetType().GetField("inventory",
@@ -538,8 +563,8 @@ namespace Oxide.Plugins
             if (inventoryField != null)
             {
                 var value = inventoryField.GetValue(scientist);
-                if (value is BasePlayerInventory inv2)
-                    return inv2;
+                if (value != null)
+                    return value;
             }
 
             return null;
