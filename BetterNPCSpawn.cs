@@ -156,7 +156,7 @@ namespace Oxide.Plugins
             public float CoverSearchRange = 30f;
             public float AggressionScale = 1f;
             public float GroupAggressionModifier = 1.2f;
-            public string PreferredWeapon = "rifle.ak";
+            public string PreferredWeapon = "pistol.revolver";
             public float WeaponSwitchCooldown = 2f;
             public int AmmoPerMagazine = 30;
             public bool InfiniteAmmo = false;
@@ -472,6 +472,7 @@ namespace Oxide.Plugins
 
                 ApplyNpcBehavior(scientist, config.DefaultBehavior);
                 entity.Spawn();
+                GiveNpcClothing(scientist);
                 GiveNpcWeapon(scientist, config.DefaultBehavior);
                 spawnedNPCs.Add(entity);
                 SetupPatrolRoute(entity, config.DefaultBehavior);
@@ -484,6 +485,48 @@ namespace Oxide.Plugins
                     Puts("SpawnNPCAtLocation failed: " + ex.Message);
                 return false;
             }
+        }
+
+        private void GiveNpcClothing(object scientist)
+        {
+            if (scientist == null)
+                return;
+
+            try
+            {
+                var inventory = GetInventory(scientist);
+                if (inventory == null)
+                    return;
+
+                string[] clothing = new string[]
+                {
+                    "hat.boonie",
+                    "jacket.wood",
+                    "pants.wood",
+                    "shoes.boots",
+                    "gloves.leather"
+                };
+
+                foreach (string clothingItem in clothing)
+                {
+                    ItemDefinition itemDef = ItemManager.FindItemDefinition(clothingItem);
+                    if (itemDef != null)
+                    {
+                        try
+                        {
+                            var method = inventory.GetType().GetMethod("GiveItem",
+                                System.Reflection.BindingFlags.Public |
+                                System.Reflection.BindingFlags.NonPublic |
+                                System.Reflection.BindingFlags.Instance);
+
+                            if (method != null)
+                                method.Invoke(inventory, new object[] { itemDef, 1 });
+                        }
+                        catch { }
+                    }
+                }
+            }
+            catch { }
         }
 
         private void GiveNpcWeapon(object scientist, NpcBehavior behavior)
@@ -499,7 +542,6 @@ namespace Oxide.Plugins
                 {
                     try
                     {
-                        // Použij reflections pro dávání item
                         var method = inventory.GetType().GetMethod("GiveItem",
                             System.Reflection.BindingFlags.Public |
                             System.Reflection.BindingFlags.NonPublic |
@@ -514,7 +556,7 @@ namespace Oxide.Plugins
 
             if (!behavior.InfiniteAmmo && behavior.AmmoPerMagazine > 0)
             {
-                ItemDefinition ammoDef = ItemManager.FindItemDefinition("ammo.rifle");
+                ItemDefinition ammoDef = ItemManager.FindItemDefinition("ammo.pistol");
                 if (ammoDef != null)
                 {
                     var inventory = GetInventory(scientist);
